@@ -1,0 +1,10 @@
+node_modules
+dist
+.wrangler
+uploads
+.dev.vars
+.DS_Store
+*.log
+*.tsbuildinfo
+.admin-2fa-setup.txt
+.thumbnail

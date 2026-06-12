@@ -1,0 +1,17 @@
+name = "tarsoart-worker"
+main = "worker/index.ts"
+compatibility_date = "2026-06-07"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "tarsoart-db"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+
+[[r2_buckets]]
+binding = "ASSETS"
+bucket_name = "tarsoart-assets"
+
+[vars]
+# In production, set this to the Cloudflare Pages URL, for example:
+# ADMIN_ORIGIN = "https://tarsoart.pages.dev"
+ADMIN_ORIGIN = "http://localhost:5174,http://127.0.0.1:5174"
