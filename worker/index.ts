@@ -95,7 +95,7 @@ export default {
 
       if (url.pathname === "/api/admin/logout" && request.method === "POST") {
         const response = json({ data: { ok: true } });
-        clearAuthCookies(response, url);
+        clearAuthCookies(response, request);
         return withCors(request, env, response);
       }
 
@@ -254,14 +254,16 @@ async function login(request: Request, env: Env): Promise<Response> {
       totpConfigured: await isTotpConfigured(env),
     },
   });
-  response.headers.append("Set-Cookie", cookie(CHALLENGE_COOKIE, challenge, CHALLENGE_TTL_SECONDS, new URL(request.url)));
-  response.headers.append("Set-Cookie", expiredCookie(SESSION_COOKIE, new URL(request.url)));
+  response.headers.append("Set-Cookie", cookie(CHALLENGE_COOKIE, challenge, CHALLENGE_TTL_SECONDS, request));
+  response.headers.append("Set-Cookie", expiredCookie(SESSION_COOKIE, request));
   return response;
 }
 
 async function getTotpSetup(request: Request, env: Env): Promise<Response> {
   const challenge = await readChallenge(request, env);
-  if (!challenge) return json({ error: "Password step required", code: "PASSWORD_REQUIRED" }, 401);
+  if (!challenge) {
+    return json({ error: "Etapa da senha expirada. Volte e entre novamente.", code: "PASSWORD_REQUIRED" }, 401);
+  }
   if (!env.ADMIN_TOTP_SECRET) return json({ error: "TOTP secret is not configured" }, 500);
 
   const limited = await checkRateLimit(request, env, "totp-setup", 8, 10 * 60, 30 * 60);
@@ -277,7 +279,9 @@ async function getTotpSetup(request: Request, env: Env): Promise<Response> {
 
 async function verifySetupTotp(request: Request, env: Env): Promise<Response> {
   const challenge = await readChallenge(request, env);
-  if (!challenge) return json({ error: "Password step required", code: "PASSWORD_REQUIRED" }, 401);
+  if (!challenge) {
+    return json({ error: "Etapa da senha expirada. Volte e entre novamente.", code: "PASSWORD_REQUIRED" }, 401);
+  }
 
   if (await isTotpConfigured(env)) {
     return json({ error: "2FA setup already configured", code: "TOTP_ALREADY_CONFIGURED" }, 403);
@@ -299,13 +303,15 @@ async function verifySetupTotp(request: Request, env: Env): Promise<Response> {
   await auditEvent(request, env, "totp_setup_verify", true);
 
   const response = await issueSession(request, env);
-  response.headers.append("Set-Cookie", expiredCookie(CHALLENGE_COOKIE, new URL(request.url)));
+  response.headers.append("Set-Cookie", expiredCookie(CHALLENGE_COOKIE, request));
   return response;
 }
 
 async function verifyChallengeTotp(request: Request, env: Env): Promise<Response> {
   const challenge = await readChallenge(request, env);
-  if (!challenge) return json({ error: "Password step required", code: "PASSWORD_REQUIRED" }, 401);
+  if (!challenge) {
+    return json({ error: "Etapa da senha expirada. Volte e entre novamente.", code: "PASSWORD_REQUIRED" }, 401);
+  }
 
   const limited = await checkRateLimit(request, env, "totp", 6, 10 * 60, 30 * 60);
   if (!limited.allowed) return rateLimitResponse(limited);
@@ -322,7 +328,7 @@ async function verifyChallengeTotp(request: Request, env: Env): Promise<Response
   await auditEvent(request, env, "totp_verify", true);
 
   const response = await issueSession(request, env);
-  response.headers.append("Set-Cookie", expiredCookie(CHALLENGE_COOKIE, new URL(request.url)));
+  response.headers.append("Set-Cookie", expiredCookie(CHALLENGE_COOKIE, request));
   return response;
 }
 
@@ -367,7 +373,7 @@ async function issueSession(request: Request, env: Env): Promise<Response> {
       twoFactorExpiresAt: new Date((now + TOTP_TTL_SECONDS) * 1000).toISOString(),
     },
   });
-  response.headers.append("Set-Cookie", cookie(SESSION_COOKIE, session, SESSION_TTL_SECONDS, new URL(request.url)));
+  response.headers.append("Set-Cookie", cookie(SESSION_COOKIE, session, SESSION_TTL_SECONDS, request));
   return response;
 }
 
@@ -998,21 +1004,29 @@ function readCookie(request: Request, name: string): string | null {
   );
 }
 
-function clearAuthCookies(response: Response, url: URL): void {
-  response.headers.append("Set-Cookie", expiredCookie(SESSION_COOKIE, url));
-  response.headers.append("Set-Cookie", expiredCookie(CHALLENGE_COOKIE, url));
+function clearAuthCookies(response: Response, request: Request): void {
+  response.headers.append("Set-Cookie", expiredCookie(SESSION_COOKIE, request));
+  response.headers.append("Set-Cookie", expiredCookie(CHALLENGE_COOKIE, request));
 }
 
-function cookie(name: string, value: string, maxAge: number, url: URL): string {
-  return `${name}=${value}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${maxAge}${secureCookie(url)}`;
+function cookie(name: string, value: string, maxAge: number, request: Request): string {
+  return `${name}=${value}; HttpOnly; ${cookieSecurityPolicy(request)}; Path=/; Max-Age=${maxAge}`;
 }
 
-function expiredCookie(name: string, url: URL): string {
-  return `${name}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0${secureCookie(url)}`;
+function expiredCookie(name: string, request: Request): string {
+  return `${name}=; HttpOnly; ${cookieSecurityPolicy(request)}; Path=/; Max-Age=0`;
 }
 
-function secureCookie(url: URL): string {
-  return url.protocol === "https:" ? "; Secure" : "";
+function cookieSecurityPolicy(request: Request): string {
+  const url = new URL(request.url);
+  const origin = request.headers.get("Origin");
+  const isCrossOriginAdmin = Boolean(origin && origin !== url.origin);
+
+  if (url.protocol === "https:" && isCrossOriginAdmin) {
+    return "SameSite=None; Secure";
+  }
+
+  return `SameSite=Strict${url.protocol === "https:" ? "; Secure" : ""}`;
 }
 
 function tooLarge(request: Request, limit: number): boolean {
