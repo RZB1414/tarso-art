@@ -5,7 +5,7 @@ compatibility_date = "2026-06-07"
 [[d1_databases]]
 binding = "DB"
 database_name = "tarsoart-db"
-database_id = "REPLACE_WITH_D1_DATABASE_ID"
+database_id = "d6dd36bb-595b-48f0-8660-8f385e5e1af5"
 
 [[r2_buckets]]
 binding = "ASSETS"
