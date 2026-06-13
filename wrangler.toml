@@ -1,4 +1,4 @@
-name = "tarsoart-worker"
+name = "tarso-art"
 main = "worker/index.ts"
 compatibility_date = "2026-06-07"
 

@@ -9,7 +9,7 @@
     "preview": "vite preview --host 127.0.0.1 --port 5174 --strictPort",
     "worker:dev": "wrangler dev worker/index.ts --local --persist-to .wrangler/state --port 8790",
     "deploy:check": "node scripts/check-deploy-config.mjs",
-    "worker:deploy": "npm run deploy:check && wrangler deploy",
+    "worker:deploy": "npm run deploy:check && wrangler deploy --keep-vars",
     "d1:migrate:local": "wrangler d1 migrations apply tarsoart-db --local",
     "d1:migrate:remote": "wrangler d1 migrations apply tarsoart-db --remote",
     "hash:password": "node scripts/hash-admin-password.mjs",

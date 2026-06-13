@@ -3,6 +3,7 @@ dist
 .wrangler
 uploads
 .dev.vars
+.env.local
 .DS_Store
 *.log
 *.tsbuildinfo
