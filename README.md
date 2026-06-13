@@ -116,10 +116,11 @@ Esse comando roda `npm run deploy:check` antes do deploy. Ele falha se o `databa
 
 - Build command: `npm run build`
 - Build output: `dist`
-- Variavel opcional: `VITE_API_BASE_URL`
+- O projeto inclui um proxy em `functions/api/[[path]].js` para enviar `/api/*` ao Worker.
 
-Para a configuracao mais segura, roteie o Worker no mesmo dominio do Pages em `/api/*` e deixe `VITE_API_BASE_URL` vazio.
-Se o Worker estiver em outro dominio, defina `VITE_API_BASE_URL` com a URL do Worker. O header CSP atual permite `workers.dev`; se voce usar um dominio customizado separado, adicione esse dominio em `connect-src` no arquivo `public/_headers`.
+Em producao, o navegador deve chamar a API pelo mesmo dominio do Pages (`/api/*`). Isso evita bloqueio de cookies de terceiros no fluxo de admin/2FA. O Worker continua sendo o backend real; o Pages apenas faz o proxy para ele.
+
+`VITE_API_BASE_URL` deve ficar vazio para novos builds de producao. Se a variavel ainda existir no painel do Cloudflare Pages, o frontend ignora esse valor quando roda fora de localhost e usa `/api/*`.
 
 ## Rotas da API
 

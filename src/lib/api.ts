@@ -1,7 +1,10 @@
 import { DEFAULT_CONTENT } from "../content/defaultContent";
 import type { ApiResult, SiteContent } from "../types";
 
-const rawBase = import.meta.env.VITE_API_BASE_URL || "";
+const configuredBase = import.meta.env.VITE_API_BASE_URL || "";
+const productionHost = typeof window !== "undefined" ? window.location.hostname : "";
+const usesPagesApiProxy = productionHost && !["localhost", "127.0.0.1"].includes(productionHost);
+const rawBase = usesPagesApiProxy ? "" : configuredBase;
 export const API_BASE = rawBase.replace(/\/$/, "");
 const CSRF_STORAGE_KEY = "tarso_admin_csrf";
 
