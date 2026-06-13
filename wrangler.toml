@@ -12,6 +12,5 @@ binding = "ASSETS"
 bucket_name = "tarsoart-assets"
 
 [vars]
-# In production, set this to the Cloudflare Pages URL, for example:
-# ADMIN_ORIGIN = "https://tarsoart.pages.dev"
-ADMIN_ORIGIN = "http://localhost:5174,http://127.0.0.1:5174"
+# Production Pages URL allowed to call the Worker API.
+ADMIN_ORIGIN = "https://tarso-art.pages.dev"
