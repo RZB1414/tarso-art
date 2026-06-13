@@ -230,7 +230,7 @@ export function ImageField({
               type="range"
               min={IMAGE_ZOOM_MIN}
               max={IMAGE_ZOOM_MAX}
-              step="0.05"
+              step="0.01"
               value={frame.zoom}
               onChange={(event) => changePlacement({ zoom: Number(event.target.value) })}
             />
