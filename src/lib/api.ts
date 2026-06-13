@@ -31,11 +31,12 @@ async function jsonRequest<T>(
   try {
     const csrf = readCsrfToken();
     const isAdminMutation = path.startsWith("/api/admin/") && !["GET", undefined].includes(init.method);
+    const hasJsonBody = Boolean(init.body) && !(init.body instanceof FormData);
     const response = await fetch(`${API_BASE}${path}`, {
       credentials: "include",
       ...init,
       headers: {
-        ...(init.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
+        ...(hasJsonBody ? { "Content-Type": "application/json" } : {}),
         ...(csrf && isAdminMutation ? { "X-CSRF-Token": csrf } : {}),
         ...(init.headers || {}),
       },

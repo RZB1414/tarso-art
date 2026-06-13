@@ -41,6 +41,7 @@ const MAX_JSON_SIZE = 256 * 1024;
 const SESSION_TTL_SECONDS = 7 * 24 * 60 * 60;
 const TOTP_TTL_SECONDS = 24 * 60 * 60;
 const CHALLENGE_TTL_SECONDS = 10 * 60;
+const TRUSTED_PRODUCTION_ORIGINS = ["https://tarso-art.pages.dev"];
 const PORTFOLIO_SPANS: Array<PortfolioItem["span"]> = ["s-a", "s-b", "s-c", "s-d", "s-e", "s-f", "s-g"];
 const ART_VARIANTS: ArtVariant[] = ["ink", "graphite"];
 const HERO_LAYOUTS: Array<SiteContent["hero"]["layout"]> = ["panels", "splash", "editorial"];
@@ -1054,7 +1055,7 @@ function allowedOrigins(request: Request, env: Env): string[] {
     .split(",")
     .map((origin) => origin.trim())
     .filter(Boolean);
-  return Array.from(new Set([sameOrigin, ...configured]));
+  return Array.from(new Set([sameOrigin, ...TRUSTED_PRODUCTION_ORIGINS, ...configured]));
 }
 
 function withCors(request: Request, env: Env, response: Response): Response {
