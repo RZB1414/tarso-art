@@ -42,6 +42,8 @@ const SESSION_TTL_SECONDS = 7 * 24 * 60 * 60;
 const TOTP_TTL_SECONDS = 24 * 60 * 60;
 const CHALLENGE_TTL_SECONDS = 10 * 60;
 const TRUSTED_PRODUCTION_ORIGINS = ["https://tarso-art.pages.dev"];
+const IMAGE_ZOOM_MIN = 0.25;
+const IMAGE_ZOOM_MAX = 3;
 const PORTFOLIO_SPANS: Array<PortfolioItem["span"]> = ["s-a", "s-b", "s-c", "s-d", "s-e", "s-f", "s-g"];
 const ART_VARIANTS: ArtVariant[] = ["ink", "graphite"];
 const HERO_LAYOUTS: Array<SiteContent["hero"]["layout"]> = ["panels", "splash", "editorial"];
@@ -958,7 +960,7 @@ function cleanPlacement(value: unknown) {
   return {
     x: cleanNumber(row.x, 50, 0, 100),
     y: cleanNumber(row.y, 50, 0, 100),
-    zoom: cleanNumber(row.zoom, 1, 1, 3),
+    zoom: cleanNumber(row.zoom, 1, IMAGE_ZOOM_MIN, IMAGE_ZOOM_MAX),
   };
 }
 

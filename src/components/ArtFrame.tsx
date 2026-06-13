@@ -6,14 +6,17 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
+export const IMAGE_ZOOM_MIN = 0.25;
+export const IMAGE_ZOOM_MAX = 3;
+
 export function normalizeImagePlacement(placement?: ImagePlacement): ImagePlacement {
   return {
     x: clamp(typeof placement?.x === "number" && Number.isFinite(placement.x) ? placement.x : 50, 0, 100),
     y: clamp(typeof placement?.y === "number" && Number.isFinite(placement.y) ? placement.y : 50, 0, 100),
     zoom: clamp(
       typeof placement?.zoom === "number" && Number.isFinite(placement.zoom) ? placement.zoom : 1,
-      1,
-      3,
+      IMAGE_ZOOM_MIN,
+      IMAGE_ZOOM_MAX,
     ),
   };
 }

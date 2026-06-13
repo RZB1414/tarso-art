@@ -1,7 +1,7 @@
 import { useRef, useState, type PointerEvent, type ReactNode } from "react";
 import { resolveAssetUrl, uploadImage } from "../lib/api";
 import type { ImagePlacement } from "../types";
-import { ArtFrame, normalizeImagePlacement } from "./ArtFrame";
+import { ArtFrame, IMAGE_ZOOM_MAX, IMAGE_ZOOM_MIN, normalizeImagePlacement } from "./ArtFrame";
 
 export function TextField({
   label,
@@ -228,8 +228,8 @@ export function ImageField({
             <span>Zoom <b>{Math.round(frame.zoom * 100)}%</b></span>
             <input
               type="range"
-              min="1"
-              max="3"
+              min={IMAGE_ZOOM_MIN}
+              max={IMAGE_ZOOM_MAX}
               step="0.05"
               value={frame.zoom}
               onChange={(event) => changePlacement({ zoom: Number(event.target.value) })}
