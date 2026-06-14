@@ -292,6 +292,7 @@ export function ImageField({
               <input
                 type="color"
                 value={overlayStyle.textColor}
+                onInput={(event) => changeOverlay({ textColor: event.currentTarget.value })}
                 onChange={(event) => changeOverlay({ textColor: event.target.value })}
               />
             </label>
@@ -300,6 +301,7 @@ export function ImageField({
               <input
                 type="color"
                 value={overlayStyle.backgroundColor}
+                onInput={(event) => changeOverlay({ backgroundColor: event.currentTarget.value })}
                 onChange={(event) => changeOverlay({ backgroundColor: event.target.value })}
               />
             </label>
@@ -312,6 +314,7 @@ export function ImageField({
               max="100"
               step="1"
               value={overlayStyle.backgroundOpacity}
+              onInput={(event) => changeOverlay({ backgroundOpacity: Number(event.currentTarget.value) })}
               onChange={(event) => changeOverlay({ backgroundOpacity: Number(event.target.value) })}
             />
           </label>
@@ -323,6 +326,7 @@ export function ImageField({
               max="30"
               step="1"
               value={overlayStyle.backgroundBlur}
+              onInput={(event) => changeOverlay({ backgroundBlur: Number(event.currentTarget.value) })}
               onChange={(event) => changeOverlay({ backgroundBlur: Number(event.target.value) })}
             />
           </label>
