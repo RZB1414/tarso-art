@@ -12,8 +12,12 @@ import {
 import type { ImageOverlayStyle, ImagePlacement, MediaType } from "../types";
 import {
   ArtFrame,
+  FONT_WEIGHT_MAX,
+  FONT_WEIGHT_MIN,
   IMAGE_ZOOM_MAX,
   IMAGE_ZOOM_MIN,
+  TEXT_SCALE_MAX,
+  TEXT_SCALE_MIN,
   normalizeImageOverlay,
   normalizeImagePlacement,
 } from "./ArtFrame";
@@ -127,9 +131,12 @@ export function ImageField({
   const [error, setError] = useState("");
   const drag = useRef<{
     pointerId: number;
+    mode: "image" | "text";
     startX: number;
     startY: number;
     initial: ImagePlacement;
+    initialTextX: number;
+    initialTextY: number;
     width: number;
     height: number;
   } | null>(null);
@@ -186,11 +193,15 @@ export function ImageField({
   function startDrag(event: PointerEvent<HTMLDivElement>) {
     if (!value) return;
     const rect = event.currentTarget.getBoundingClientRect();
+    const onText = Boolean(onOverlayChange && (event.target as HTMLElement).closest?.(".art__label"));
     drag.current = {
       pointerId: event.pointerId,
+      mode: onText ? "text" : "image",
       startX: event.clientX,
       startY: event.clientY,
       initial: frame,
+      initialTextX: overlayStyle.textX,
+      initialTextY: overlayStyle.textY,
       width: rect.width || 1,
       height: rect.height || 1,
     };
@@ -202,6 +213,10 @@ export function ImageField({
     if (!current || current.pointerId !== event.pointerId) return;
     const dx = ((event.clientX - current.startX) / current.width) * 100;
     const dy = ((event.clientY - current.startY) / current.height) * 100;
+    if (current.mode === "text") {
+      changeOverlay({ textX: current.initialTextX + dx, textY: current.initialTextY + dy });
+      return;
+    }
     onPlacementChange(
       normalizeImagePlacement({
         ...current.initial,
@@ -253,7 +268,7 @@ export function ImageField({
 
       <div className="admin-image-caption">
         <strong>Previa igual ao site</strong>
-        <span>{value ? "Arraste a midia ou use os controles abaixo." : "Nenhuma foto ou video enviado ainda."}</span>
+        <span>{value ? "Arraste a midia, ou arraste o texto para reposiciona-lo, ou use os controles abaixo." : "Nenhuma foto ou video enviado ainda."}</span>
       </div>
 
       <div
@@ -328,7 +343,7 @@ export function ImageField({
         <div className="admin-overlay-controls">
           <div className="admin-overlay-controls__head">
             <strong>Texto sobre a imagem</strong>
-            <span>Cor, fundo e blur para melhorar a leitura.</span>
+            <span>Mova, redimensione, ajuste a espessura, a cor e o fundo do texto.</span>
           </div>
           <div className="admin-color-grid">
             <label className="admin-color-field">
@@ -372,6 +387,54 @@ export function ImageField({
               value={overlayStyle.backgroundBlur}
               onInput={(event) => changeOverlay({ backgroundBlur: Number(event.currentTarget.value) })}
               onChange={(event) => changeOverlay({ backgroundBlur: Number(event.target.value) })}
+            />
+          </label>
+          <label className="admin-range">
+            <span>Tamanho do texto <b>{Math.round(overlayStyle.textScale * 100)}%</b></span>
+            <input
+              type="range"
+              min={TEXT_SCALE_MIN}
+              max={TEXT_SCALE_MAX}
+              step="0.05"
+              value={overlayStyle.textScale}
+              onInput={(event) => changeOverlay({ textScale: Number(event.currentTarget.value) })}
+              onChange={(event) => changeOverlay({ textScale: Number(event.target.value) })}
+            />
+          </label>
+          <label className="admin-range">
+            <span>Espessura das letras <b>{Math.round(overlayStyle.fontWeight)}</b></span>
+            <input
+              type="range"
+              min={FONT_WEIGHT_MIN}
+              max={FONT_WEIGHT_MAX}
+              step="50"
+              value={overlayStyle.fontWeight}
+              onInput={(event) => changeOverlay({ fontWeight: Number(event.currentTarget.value) })}
+              onChange={(event) => changeOverlay({ fontWeight: Number(event.target.value) })}
+            />
+          </label>
+          <label className="admin-range">
+            <span>Texto na horizontal <b>{Math.round(overlayStyle.textX)}%</b></span>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              step="1"
+              value={overlayStyle.textX}
+              onInput={(event) => changeOverlay({ textX: Number(event.currentTarget.value) })}
+              onChange={(event) => changeOverlay({ textX: Number(event.target.value) })}
+            />
+          </label>
+          <label className="admin-range">
+            <span>Texto na vertical <b>{Math.round(overlayStyle.textY)}%</b></span>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              step="1"
+              value={overlayStyle.textY}
+              onInput={(event) => changeOverlay({ textY: Number(event.currentTarget.value) })}
+              onChange={(event) => changeOverlay({ textY: Number(event.target.value) })}
             />
           </label>
           <button className="admin-btn admin-btn--ghost admin-btn--fit" type="button" onClick={resetOverlay}>

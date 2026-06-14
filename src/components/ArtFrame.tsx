@@ -8,11 +8,19 @@ function clamp(value: number, min: number, max: number) {
 
 export const IMAGE_ZOOM_MIN = 0.25;
 export const IMAGE_ZOOM_MAX = 3;
+export const TEXT_SCALE_MIN = 0.5;
+export const TEXT_SCALE_MAX = 3;
+export const FONT_WEIGHT_MIN = 100;
+export const FONT_WEIGHT_MAX = 900;
 export const DEFAULT_IMAGE_OVERLAY: ImageOverlayStyle = {
   textColor: "#ffffff",
   backgroundColor: "#111318",
   backgroundOpacity: 0,
   backgroundBlur: 0,
+  textX: 5,
+  textY: 88,
+  textScale: 1,
+  fontWeight: 400,
 };
 
 export function normalizeImagePlacement(placement?: ImagePlacement): ImagePlacement {
@@ -54,6 +62,32 @@ export function normalizeImageOverlay(overlay?: ImageOverlayStyle): ImageOverlay
         : DEFAULT_IMAGE_OVERLAY.backgroundBlur,
       0,
       30,
+    ),
+    textX: clamp(
+      typeof overlay?.textX === "number" && Number.isFinite(overlay.textX) ? overlay.textX : DEFAULT_IMAGE_OVERLAY.textX,
+      0,
+      100,
+    ),
+    textY: clamp(
+      typeof overlay?.textY === "number" && Number.isFinite(overlay.textY) ? overlay.textY : DEFAULT_IMAGE_OVERLAY.textY,
+      0,
+      100,
+    ),
+    textScale: clamp(
+      typeof overlay?.textScale === "number" && Number.isFinite(overlay.textScale)
+        ? overlay.textScale
+        : DEFAULT_IMAGE_OVERLAY.textScale,
+      TEXT_SCALE_MIN,
+      TEXT_SCALE_MAX,
+    ),
+    fontWeight: Math.round(
+      clamp(
+        typeof overlay?.fontWeight === "number" && Number.isFinite(overlay.fontWeight)
+          ? overlay.fontWeight
+          : DEFAULT_IMAGE_OVERLAY.fontWeight,
+        FONT_WEIGHT_MIN,
+        FONT_WEIGHT_MAX,
+      ),
     ),
   };
 }
@@ -107,6 +141,11 @@ export function ArtFrame({
     "--overlay-bg-rgb": hexToRgbTriplet(overlay.backgroundColor),
     "--overlay-bg-opacity": String(overlay.backgroundOpacity / 100),
     "--overlay-bg-blur": `${overlay.backgroundBlur}px`,
+    "--overlay-text-x": `${overlay.textX}%`,
+    "--overlay-text-y": `${overlay.textY}%`,
+    "--overlay-text-scale": String(overlay.textScale),
+    "--overlay-font-weight": String(overlay.fontWeight),
+    "--overlay-text-stroke": `${(Math.max(0, overlay.fontWeight - 400) / 500 * 0.9).toFixed(2)}px`,
   } as CSSProperties;
   const hasMedia = Boolean(src);
   const videoSrc = resolvedMediaType === "video" && (imageLoading === "eager" || videoActive) ? src : undefined;

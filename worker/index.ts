@@ -51,11 +51,19 @@ const CHALLENGE_TTL_SECONDS = 10 * 60;
 const TRUSTED_PRODUCTION_ORIGINS = ["https://tarso-art.pages.dev"];
 const IMAGE_ZOOM_MIN = 0.25;
 const IMAGE_ZOOM_MAX = 3;
+const TEXT_SCALE_MIN = 0.5;
+const TEXT_SCALE_MAX = 3;
+const FONT_WEIGHT_MIN = 100;
+const FONT_WEIGHT_MAX = 900;
 const DEFAULT_IMAGE_OVERLAY: ImageOverlayStyle = {
   textColor: "#ffffff",
   backgroundColor: "#111318",
   backgroundOpacity: 0,
   backgroundBlur: 0,
+  textX: 5,
+  textY: 88,
+  textScale: 1,
+  fontWeight: 400,
 };
 const PORTFOLIO_SPANS: Array<PortfolioItem["span"]> = ["s-a", "s-b", "s-c", "s-d", "s-e", "s-f", "s-g"];
 const ART_VARIANTS: ArtVariant[] = ["ink", "graphite"];
@@ -1074,6 +1082,10 @@ function cleanOverlayStyle(value: unknown): ImageOverlayStyle | undefined {
       100,
     ),
     backgroundBlur: cleanNumber(row.backgroundBlur, DEFAULT_IMAGE_OVERLAY.backgroundBlur, 0, 30),
+    textX: cleanNumber(row.textX, DEFAULT_IMAGE_OVERLAY.textX, 0, 100),
+    textY: cleanNumber(row.textY, DEFAULT_IMAGE_OVERLAY.textY, 0, 100),
+    textScale: cleanNumber(row.textScale, DEFAULT_IMAGE_OVERLAY.textScale, TEXT_SCALE_MIN, TEXT_SCALE_MAX),
+    fontWeight: cleanInteger(row.fontWeight, DEFAULT_IMAGE_OVERLAY.fontWeight, FONT_WEIGHT_MIN, FONT_WEIGHT_MAX),
   };
 }
 

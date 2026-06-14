@@ -12,6 +12,10 @@ export type ImageOverlayStyle = {
   backgroundColor: string;
   backgroundOpacity: number;
   backgroundBlur: number;
+  textX: number;
+  textY: number;
+  textScale: number;
+  fontWeight: number;
 };
 
 export type PortfolioItem = {
