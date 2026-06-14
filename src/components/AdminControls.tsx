@@ -162,7 +162,7 @@ export function ImageField({
       normalizeImagePlacement({
         ...current.initial,
         x: current.initial.x - dx / current.initial.zoom,
-        y: current.initial.y - dy / current.initial.zoom,
+        y: current.initial.y + dy / current.initial.zoom,
       }),
     );
   }
