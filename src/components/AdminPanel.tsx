@@ -509,6 +509,7 @@ export function AdminPanel({ initialContent, loading, onContentSaved }: AdminPan
               help="Esta imagem ocupa o bloco principal do topo. Arraste para enquadrar rosto, corpo ou detalhe importante."
               value={draft.hero.mainImageUrl}
               alt={draft.hero.mainImageAlt}
+              mediaType={draft.hero.mainMediaType}
               placement={draft.hero.mainImagePlacement}
               overlay={draft.hero.mainImageOverlay}
               preview={{
@@ -517,9 +518,10 @@ export function AdminPanel({ initialContent, loading, onContentSaved }: AdminPan
                 description: "Main artwork",
                 label: "MAIN",
               }}
-              onImageChange={(url, alt) => {
+              onImageChange={(url, alt, mediaType) => {
                 update(["hero", "mainImageUrl"], url);
                 update(["hero", "mainImageAlt"], alt);
+                update(["hero", "mainMediaType"], mediaType);
               }}
               onPlacementChange={(placement) => update(["hero", "mainImagePlacement"], placement)}
               onOverlayChange={(overlay) => update(["hero", "mainImageOverlay"], overlay)}
@@ -560,6 +562,7 @@ export function AdminPanel({ initialContent, loading, onContentSaved }: AdminPan
                   help="A previa usa o mesmo formato desse card no site."
                   value={item.imageUrl}
                   alt={item.imageAlt}
+                  mediaType={item.mediaType}
                   placement={item.imagePlacement}
                   overlay={item.imageOverlay}
                   preview={{
@@ -569,9 +572,10 @@ export function AdminPanel({ initialContent, loading, onContentSaved }: AdminPan
                     label: `#${String(index + 1).padStart(2, "0")}`,
                     zoom: true,
                   }}
-                  onImageChange={(url, alt) => {
+                  onImageChange={(url, alt, mediaType) => {
                     update(["portfolio", "items", index, "imageUrl"], url);
                     update(["portfolio", "items", index, "imageAlt"], alt);
+                    update(["portfolio", "items", index, "mediaType"], mediaType);
                   }}
                   onPlacementChange={(placement) => update(["portfolio", "items", index, "imagePlacement"], placement)}
                   onOverlayChange={(overlay) => update(["portfolio", "items", index, "imageOverlay"], overlay)}
@@ -634,6 +638,7 @@ export function AdminPanel({ initialContent, loading, onContentSaved }: AdminPan
                   help="A previa mostra o destaque como ele aparece na pagina."
                   value={item.imageUrl}
                   alt={item.imageAlt}
+                  mediaType={item.mediaType}
                   placement={item.imagePlacement}
                   overlay={item.imageOverlay}
                   preview={{
@@ -643,9 +648,10 @@ export function AdminPanel({ initialContent, loading, onContentSaved }: AdminPan
                     label: `FEAT ${item.number}`,
                     zoom: true,
                   }}
-                  onImageChange={(url, alt) => {
+                  onImageChange={(url, alt, mediaType) => {
                     update(["featured", "items", index, "imageUrl"], url);
                     update(["featured", "items", index, "imageAlt"], alt);
+                    update(["featured", "items", index, "mediaType"], mediaType);
                   }}
                   onPlacementChange={(placement) => update(["featured", "items", index, "imagePlacement"], placement)}
                   onOverlayChange={(overlay) => update(["featured", "items", index, "imageOverlay"], overlay)}
@@ -669,6 +675,7 @@ export function AdminPanel({ initialContent, loading, onContentSaved }: AdminPan
               help="Use os controles para centralizar rosto, pose ou detalhe."
               value={draft.about.imageUrl}
               alt={draft.about.imageAlt}
+              mediaType={draft.about.mediaType}
               placement={draft.about.imagePlacement}
               overlay={draft.about.imageOverlay}
               preview={{
@@ -678,9 +685,10 @@ export function AdminPanel({ initialContent, loading, onContentSaved }: AdminPan
                 label: "PHOTO",
                 round: true,
               }}
-              onImageChange={(url, alt) => {
+              onImageChange={(url, alt, mediaType) => {
                 update(["about", "imageUrl"], url);
                 update(["about", "imageAlt"], alt);
+                update(["about", "mediaType"], mediaType);
               }}
               onPlacementChange={(placement) => update(["about", "imagePlacement"], placement)}
               onOverlayChange={(overlay) => update(["about", "imageOverlay"], overlay)}
@@ -721,6 +729,7 @@ export function AdminPanel({ initialContent, loading, onContentSaved }: AdminPan
                   help="Opcional. A previa segue o formato do card no site."
                   value={step.imageUrl}
                   alt={step.imageAlt}
+                  mediaType={step.mediaType}
                   placement={step.imagePlacement}
                   overlay={step.imageOverlay}
                   preview={{
@@ -728,9 +737,10 @@ export function AdminPanel({ initialContent, loading, onContentSaved }: AdminPan
                     variant: step.variant,
                     description: step.text,
                   }}
-                  onImageChange={(url, alt) => {
+                  onImageChange={(url, alt, mediaType) => {
                     update(["process", "steps", index, "imageUrl"], url);
                     update(["process", "steps", index, "imageAlt"], alt);
+                    update(["process", "steps", index, "mediaType"], mediaType);
                   }}
                   onPlacementChange={(placement) => update(["process", "steps", index, "imagePlacement"], placement)}
                   onOverlayChange={(overlay) => update(["process", "steps", index, "imageOverlay"], overlay)}

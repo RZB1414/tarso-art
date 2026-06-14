@@ -203,6 +203,7 @@ function Hero({ content }: { content: SiteContent }) {
                 label="MAIN"
                 imageUrl={content.hero.mainImageUrl}
                 imageAlt={content.hero.mainImageAlt}
+                mediaType={content.hero.mainMediaType}
                 imagePlacement={content.hero.mainImagePlacement}
                 imageOverlay={content.hero.mainImageOverlay}
                 imageLoading="eager"
@@ -384,6 +385,7 @@ function PortfolioCard({
           label={`#${String(index + 1).padStart(2, "0")}`}
           imageUrl={item.imageUrl}
           imageAlt={item.imageAlt}
+          mediaType={item.mediaType}
           imagePlacement={item.imagePlacement}
           imageOverlay={item.imageOverlay}
           zoom
@@ -449,6 +451,7 @@ function Lightbox({
             label="HI-RES"
             imageUrl={active.imageUrl}
             imageAlt={active.imageAlt}
+            mediaType={active.mediaType}
             imagePlacement={active.imagePlacement}
             imageOverlay={active.imageOverlay}
             imageLoading="eager"
@@ -497,6 +500,7 @@ function FeaturedCard({ item }: { item: FeaturedItem }) {
           label={`FEAT ${item.number}`}
           imageUrl={item.imageUrl}
           imageAlt={item.imageAlt}
+          mediaType={item.mediaType}
           imagePlacement={item.imagePlacement}
           imageOverlay={item.imageOverlay}
           zoom
@@ -535,6 +539,7 @@ function Statement({ content }: { content: SiteContent }) {
               label="PHOTO"
               imageUrl={content.about.imageUrl}
               imageAlt={content.about.imageAlt}
+              mediaType={content.about.mediaType}
               imagePlacement={content.about.imagePlacement}
               imageOverlay={content.about.imageOverlay}
               round
@@ -582,6 +587,7 @@ function ProcessCard({ step, index }: { step: ProcessStep; index: number }) {
           label=""
           imageUrl={step.imageUrl}
           imageAlt={step.imageAlt}
+          mediaType={step.mediaType}
           imagePlacement={step.imagePlacement}
           imageOverlay={step.imageOverlay}
         />

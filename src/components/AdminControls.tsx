@@ -1,7 +1,15 @@
 import { useRef, useState, type PointerEvent, type ReactNode } from "react";
-import { resolveAssetUrl, uploadImage } from "../lib/api";
-import { ALLOWED_IMAGE_TYPES, MAX_IMAGE_FILE_SIZE, formatFileSize } from "../media";
-import type { ImageOverlayStyle, ImagePlacement } from "../types";
+import { resolveAssetUrl, uploadMedia } from "../lib/api";
+import {
+  ALLOWED_IMAGE_TYPES,
+  ALLOWED_VIDEO_TYPES,
+  MAX_IMAGE_FILE_SIZE,
+  MAX_VIDEO_FILE_SIZE,
+  formatFileSize,
+  maxFileSizeForMedia,
+  mediaTypeFromMime,
+} from "../media";
+import type { ImageOverlayStyle, ImagePlacement, MediaType } from "../types";
 import {
   ArtFrame,
   IMAGE_ZOOM_MAX,
@@ -86,6 +94,7 @@ export function ImageField({
   label,
   value,
   alt,
+  mediaType,
   placement,
   overlay,
   preview,
@@ -97,6 +106,7 @@ export function ImageField({
   label: string;
   value?: string;
   alt?: string;
+  mediaType?: MediaType;
   placement?: ImagePlacement;
   overlay?: ImageOverlayStyle;
   preview: {
@@ -109,7 +119,7 @@ export function ImageField({
     zoom?: boolean;
   };
   help?: string;
-  onImageChange: (url?: string, alt?: string) => void;
+  onImageChange: (url?: string, alt?: string, mediaType?: MediaType) => void;
   onPlacementChange: (placement?: ImagePlacement) => void;
   onOverlayChange?: (overlay?: ImageOverlayStyle) => void;
 }) {
@@ -128,28 +138,34 @@ export function ImageField({
   const overlayStyle = normalizeImageOverlay(overlay);
   const fileName = value ? decodeURIComponent(value.split("/").pop() || "imagem") : "";
 
-  async function handleFile(file?: File) {
+  async function handleFile(file: File | undefined, expectedType: MediaType) {
     if (!file) return;
     setError("");
-    if (!ALLOWED_IMAGE_TYPES.includes(file.type as (typeof ALLOWED_IMAGE_TYPES)[number])) {
-      setError("Use apenas imagens PNG, JPG, WebP ou GIF.");
+    const detectedType = mediaTypeFromMime(file.type);
+    if (!detectedType) {
+      setError("Use apenas imagens PNG, JPG, WebP ou GIF, ou videos MP4/WebM.");
       return;
     }
-    if (file.size > MAX_IMAGE_FILE_SIZE) {
-      setError(`Imagem muito grande. Use arquivo de ate ${formatFileSize(MAX_IMAGE_FILE_SIZE)}.`);
+    if (detectedType !== expectedType) {
+      setError(expectedType === "video" ? "Esse arquivo nao parece ser um video MP4/WebM." : "Esse arquivo nao parece ser uma imagem valida.");
+      return;
+    }
+    const maxSize = maxFileSizeForMedia(detectedType);
+    if (file.size > maxSize) {
+      setError(`${detectedType === "video" ? "Video" : "Imagem"} muito grande. Use arquivo de ate ${formatFileSize(maxSize)}.`);
       return;
     }
     setUploading(true);
     try {
-      const result = await uploadImage(file);
+      const result = await uploadMedia(file);
       if (result.error || !result.data) {
         setError(result.error || "Erro no upload");
         return;
       }
-      onImageChange(result.data.url, file.name.replace(/\.[a-z0-9]+$/i, ""));
+      onImageChange(result.data.url, file.name.replace(/\.[a-z0-9]+$/i, ""), result.data.mediaType);
       onPlacementChange({ x: 50, y: 50, zoom: 1 });
     } catch {
-      setError("Nao foi possivel enviar a imagem. Tente novamente.");
+      setError("Nao foi possivel enviar a midia. Tente novamente.");
     } finally {
       setUploading(false);
     }
@@ -205,26 +221,39 @@ export function ImageField({
         <div>
           <span>{label}</span>
           <small>
-            {help || "Envie uma imagem e ajuste o enquadramento vendo exatamente como ela aparece no site."}
-            {" "}Limite: {formatFileSize(MAX_IMAGE_FILE_SIZE)} por imagem.
+            {help || "Envie uma foto ou video e ajuste o enquadramento vendo exatamente como aparece no site."}
+            {" "}Limites: foto ate {formatFileSize(MAX_IMAGE_FILE_SIZE)}, video ate {formatFileSize(MAX_VIDEO_FILE_SIZE)}.
           </small>
         </div>
-        <label className="admin-upload">
-          {uploading ? "Enviando..." : value ? "Trocar imagem" : "Escolher imagem"}
-          <input
-            type="file"
-            accept="image/png,image/jpeg,image/webp,image/gif"
-            onChange={(event) => {
-              handleFile(event.target.files?.[0]);
-              event.currentTarget.value = "";
-            }}
-          />
-        </label>
+        <div className="admin-upload-group" aria-label="Escolher tipo de midia">
+          <label className="admin-upload">
+            {uploading ? "Enviando..." : value ? "Trocar por foto" : "Escolher foto"}
+            <input
+              type="file"
+              accept={ALLOWED_IMAGE_TYPES.join(",")}
+              onChange={(event) => {
+                handleFile(event.target.files?.[0], "image");
+                event.currentTarget.value = "";
+              }}
+            />
+          </label>
+          <label className="admin-upload">
+            {uploading ? "Enviando..." : value ? "Trocar por video" : "Escolher video"}
+            <input
+              type="file"
+              accept={ALLOWED_VIDEO_TYPES.join(",")}
+              onChange={(event) => {
+                handleFile(event.target.files?.[0], "video");
+                event.currentTarget.value = "";
+              }}
+            />
+          </label>
+        </div>
       </div>
 
       <div className="admin-image-caption">
         <strong>Previa igual ao site</strong>
-        <span>{value ? "Arraste a imagem ou use os controles abaixo." : "Nenhuma imagem enviada ainda."}</span>
+        <span>{value ? "Arraste a midia ou use os controles abaixo." : "Nenhuma foto ou video enviado ainda."}</span>
       </div>
 
       <div
@@ -242,6 +271,7 @@ export function ImageField({
             label={preview.label}
             imageUrl={value}
             imageAlt={alt || label}
+            mediaType={mediaType}
             imagePlacement={frame}
             imageOverlay={overlayStyle}
             imageLoading="eager"
@@ -254,7 +284,7 @@ export function ImageField({
         )}
       </div>
 
-      {value ? <p className="admin-image-current">Imagem atual: {fileName}</p> : null}
+      {value ? <p className="admin-image-current">Midia atual: {mediaType === "video" ? "video" : "foto"} - {fileName}</p> : null}
 
       {value ? (
         <div className="admin-image-controls">
@@ -353,7 +383,7 @@ export function ImageField({
       {value ? (
         <div className="admin-image-actions">
           <button className="admin-btn admin-btn--ghost admin-btn--fit" type="button" onClick={() => onPlacementChange({ x: 50, y: 50, zoom: 1 })}>
-            Centralizar imagem
+            Centralizar midia
           </button>
           <button
             className="admin-btn admin-btn--ghost admin-btn--fit"
@@ -364,7 +394,7 @@ export function ImageField({
               onOverlayChange?.(undefined);
             }}
           >
-            Remover imagem
+            Remover midia
           </button>
         </div>
       ) : null}

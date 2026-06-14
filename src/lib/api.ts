@@ -1,5 +1,5 @@
 import { DEFAULT_CONTENT } from "../content/defaultContent";
-import type { ApiResult, SiteContent } from "../types";
+import type { ApiResult, MediaType, SiteContent } from "../types";
 
 const configuredBase = import.meta.env.VITE_API_BASE_URL || "";
 const productionHost = typeof window !== "undefined" ? window.location.hostname : "";
@@ -117,12 +117,14 @@ export async function saveSiteContent(content: SiteContent) {
   });
 }
 
-export async function uploadImage(file: File) {
+export async function uploadMedia(file: File) {
   const form = new FormData();
   form.append("file", file);
 
-  return jsonRequest<{ key: string; url: string }>("/api/admin/images", {
+  return jsonRequest<{ key: string; url: string; mediaType: MediaType; contentType: string; size: number }>("/api/admin/media", {
     method: "POST",
     body: form,
   });
 }
+
+export const uploadImage = uploadMedia;

@@ -223,6 +223,15 @@ result = await request("/api/admin/images", {
 }, jar);
 assert(result.response.status === 400, "fake image upload is rejected by magic bytes");
 
+const videoForm = new FormData();
+videoForm.append("file", new Blob([Buffer.from("not actually mp4")], { type: "video/mp4" }), "fake.mp4");
+result = await request("/api/admin/media", {
+  method: "POST",
+  headers: { "X-CSRF-Token": csrf },
+  body: videoForm,
+}, jar);
+assert(result.response.status === 400, "fake video upload is rejected by magic bytes");
+
 if (pentest) {
   result = await request("/api/assets/..%2Fworker%2Findex.ts");
   assert(result.response.status === 400 || result.response.status === 404, "asset traversal probe is blocked");
@@ -231,6 +240,7 @@ if (pentest) {
   malicious.branding.instagramUrl = "javascript:alert(1)";
   malicious.branding.tiktokUrl = "data:text/html,owned";
   malicious.hero.mainImageUrl = "data:image/svg+xml,<svg></svg>";
+  malicious.hero.mainMediaType = "video";
   malicious.hero.tags = Array.from({ length: 50 }, (_, index) => `tag-${index}`);
   result = await request("/api/admin/site", {
     method: "PUT",

@@ -343,7 +343,7 @@ button {
   opacity: 0.4;
 }
 
-.art__img {
+.art__media {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -356,12 +356,16 @@ button {
   filter: contrast(1.05) saturate(0.95);
 }
 
-.art__img--zoom {
+.art__video {
+  background: #0b0d11;
+}
+
+.art__media--zoom {
   transition: transform 0.6s var(--ease);
 }
 
-.cell:hover .art__img--zoom,
-.feat__media:hover .art__img--zoom {
+.cell:hover .art__media--zoom,
+.feat__media:hover .art__media--zoom {
   transform: scale(var(--img-hover-scale, 1.06));
 }
 
@@ -1999,6 +2003,13 @@ button {
   background: var(--paper);
   color: var(--ink-900);
   cursor: pointer;
+}
+
+.admin-upload-group {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 .admin-upload input {

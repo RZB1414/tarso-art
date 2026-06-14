@@ -1,4 +1,5 @@
 export type ArtVariant = "ink" | "graphite";
+export type MediaType = "image" | "video";
 
 export type ImagePlacement = {
   x: number;
@@ -20,6 +21,7 @@ export type PortfolioItem = {
   description: string;
   imageUrl?: string;
   imageAlt?: string;
+  mediaType?: MediaType;
   imagePlacement?: ImagePlacement;
   imageOverlay?: ImageOverlayStyle;
   span: "s-a" | "s-b" | "s-c" | "s-d" | "s-e" | "s-f" | "s-g";
@@ -34,6 +36,7 @@ export type FeaturedItem = {
   description: string;
   imageUrl?: string;
   imageAlt?: string;
+  mediaType?: MediaType;
   imagePlacement?: ImagePlacement;
   imageOverlay?: ImageOverlayStyle;
   variant: ArtVariant;
@@ -48,6 +51,7 @@ export type ProcessStep = {
   progress: string;
   imageUrl?: string;
   imageAlt?: string;
+  mediaType?: MediaType;
   imagePlacement?: ImagePlacement;
   imageOverlay?: ImageOverlayStyle;
   variant: ArtVariant;
@@ -72,6 +76,7 @@ export type SiteContent = {
     layout: "panels" | "splash" | "editorial";
     mainImageUrl?: string;
     mainImageAlt?: string;
+    mainMediaType?: MediaType;
     mainImagePlacement?: ImagePlacement;
     mainImageOverlay?: ImageOverlayStyle;
   };
@@ -94,6 +99,7 @@ export type SiteContent = {
     signature: string;
     imageUrl?: string;
     imageAlt?: string;
+    mediaType?: MediaType;
     imagePlacement?: ImagePlacement;
     imageOverlay?: ImageOverlayStyle;
   };

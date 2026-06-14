@@ -1,8 +1,15 @@
 /// <reference types="@cloudflare/workers-types" />
 
 import { DEFAULT_CONTENT } from "../src/content/defaultContent";
-import { ALLOWED_IMAGE_TYPES, MAX_IMAGE_FILE_SIZE, MAX_IMAGE_UPLOAD_REQUEST_SIZE, formatFileSize } from "../src/media";
-import type { ArtVariant, FeaturedItem, ImageOverlayStyle, PortfolioItem, ProcessStep, SiteContent } from "../src/types";
+import {
+  ALLOWED_MEDIA_TYPES,
+  MAX_MEDIA_UPLOAD_REQUEST_SIZE,
+  formatFileSize,
+  maxFileSizeForMedia,
+  mediaTypeFromMime,
+  mediaTypeLabel,
+} from "../src/media";
+import type { ArtVariant, FeaturedItem, ImageOverlayStyle, MediaType, PortfolioItem, ProcessStep, SiteContent } from "../src/types";
 
 type Env = {
   DB: D1Database;
@@ -68,7 +75,7 @@ export default {
       }
 
       if (url.pathname.startsWith("/api/assets/") && ["GET", "HEAD"].includes(request.method)) {
-        return withCors(request, env, await serveAsset(url, env, request.method === "HEAD"));
+        return withCors(request, env, await serveAsset(request, url, env, request.method === "HEAD"));
       }
 
       if (url.pathname === "/api/admin/login" && request.method === "POST") {
@@ -119,12 +126,12 @@ export default {
         return withCors(request, env, await saveSite(request, env));
       }
 
-      if (url.pathname === "/api/admin/images" && request.method === "POST") {
+      if ((url.pathname === "/api/admin/media" || url.pathname === "/api/admin/images") && request.method === "POST") {
         const guard = await requireFullSession(request, env, { csrf: true });
         if (guard.response) return withCors(request, env, guard.response);
         const limited = await checkRateLimit(request, env, "admin-upload", 20, 10 * 60, 30 * 60);
         if (!limited.allowed) return withCors(request, env, rateLimitResponse(limited));
-        return withCors(request, env, await uploadImage(request, env));
+        return withCors(request, env, await uploadMedia(request, env));
       }
 
       return withCors(request, env, json({ error: "Not found" }, 404));
@@ -170,26 +177,31 @@ async function saveSite(request: Request, env: Env): Promise<Response> {
   return json({ data: content });
 }
 
-async function uploadImage(request: Request, env: Env): Promise<Response> {
-  if (tooLarge(request, MAX_IMAGE_UPLOAD_REQUEST_SIZE)) {
-    return json({ error: `Imagem muito grande. Use arquivo de ate ${formatFileSize(MAX_IMAGE_FILE_SIZE)}.` }, 413);
+async function uploadMedia(request: Request, env: Env): Promise<Response> {
+  if (tooLarge(request, MAX_MEDIA_UPLOAD_REQUEST_SIZE)) {
+    return json({ error: `Arquivo muito grande. Use videos de ate ${formatFileSize(maxFileSizeForMedia("video"))}.` }, 413);
   }
 
   const form = await request.formData();
   const file = form.get("file");
 
   if (!(file instanceof File)) return json({ error: "Missing file" }, 400);
-  if (file.size > MAX_IMAGE_FILE_SIZE) {
-    return json({ error: `Imagem muito grande. Use arquivo de ate ${formatFileSize(MAX_IMAGE_FILE_SIZE)}.` }, 400);
+  const mediaType = mediaTypeFromMime(file.type);
+  if (!mediaType) {
+    return json({ error: "Only PNG, JPEG, WebP, GIF, MP4 and WebM files are allowed" }, 400);
   }
-  if (!ALLOWED_IMAGE_TYPES.includes(file.type as (typeof ALLOWED_IMAGE_TYPES)[number])) {
-    return json({ error: "Only PNG, JPEG, WebP and GIF images are allowed" }, 400);
+  const maxSize = maxFileSizeForMedia(mediaType);
+  if (file.size > maxSize) {
+    return json({ error: `${mediaTypeLabel(mediaType)} muito grande. Use arquivo de ate ${formatFileSize(maxSize)}.` }, 400);
+  }
+  if (!ALLOWED_MEDIA_TYPES.includes(file.type as (typeof ALLOWED_MEDIA_TYPES)[number])) {
+    return json({ error: "Only PNG, JPEG, WebP, GIF, MP4 and WebM files are allowed" }, 400);
   }
 
   const bytes = await file.arrayBuffer();
-  if (!hasAllowedImageSignature(new Uint8Array(bytes), file.type)) {
-    await auditEvent(request, env, "image_upload_rejected", false, "bad_magic_bytes");
-    return json({ error: "Invalid image file" }, 400);
+  if (!hasAllowedMediaSignature(new Uint8Array(bytes), file.type)) {
+    await auditEvent(request, env, "media_upload_rejected", false, "bad_magic_bytes");
+    return json({ error: "Invalid media file" }, 400);
   }
 
   const safeName = sanitizeFilename(file.name);
@@ -204,6 +216,7 @@ async function uploadImage(request: Request, env: Env): Promise<Response> {
     },
     customMetadata: {
       filename: file.name,
+      mediaType,
     },
   });
 
@@ -215,26 +228,63 @@ async function uploadImage(request: Request, env: Env): Promise<Response> {
     .bind(key, file.name, file.type, file.size, url, new Date().toISOString())
     .run();
 
-  await auditEvent(request, env, "image_upload", true, key);
-  return json({ data: { key, url } });
+  await auditEvent(request, env, "media_upload", true, key);
+  return json({ data: { key, url, mediaType, contentType: file.type, size: file.size } });
 }
 
-async function serveAsset(url: URL, env: Env, headOnly = false): Promise<Response> {
+async function serveAsset(request: Request, url: URL, env: Env, headOnly = false): Promise<Response> {
   const key = decodeURIComponent(url.pathname.replace("/api/assets/", ""));
   if (!key || key.includes("..") || key.includes("/") || key.includes("\\")) {
     return json({ error: "Missing asset key" }, 400);
   }
 
-  const object = await env.ASSETS.get(key);
-  if (!object) return json({ error: "Asset not found" }, 404);
+  const rangeHeader = request.headers.get("Range");
+  const metadata = headOnly || rangeHeader ? await env.ASSETS.head(key) : null;
+  if ((headOnly || rangeHeader) && !metadata) return json({ error: "Asset not found" }, 404);
 
   const headers = new Headers();
+  headers.set("accept-ranges", "bytes");
+
+  if (headOnly && metadata) {
+    metadata.writeHttpMetadata(headers);
+    headers.set("etag", metadata.httpEtag);
+    headers.set("content-length", String(metadata.size));
+    headers.set("cache-control", headers.get("cache-control") || "public, max-age=31536000, immutable");
+    securityHeaders(headers, false);
+    return new Response(null, { headers });
+  }
+
+  if (rangeHeader && metadata) {
+    const range = parseRangeHeader(rangeHeader, metadata.size);
+    if (!range) {
+      headers.set("content-range", `bytes */${metadata.size}`);
+      securityHeaders(headers, false);
+      return new Response(null, { status: 416, headers });
+    }
+
+    const object = await env.ASSETS.get(key, { range: { offset: range.offset, length: range.length } });
+    if (!object || !object.body) return json({ error: "Asset not found" }, 404);
+
+    object.writeHttpMetadata(headers);
+    headers.set("etag", object.httpEtag);
+    headers.set("content-range", `bytes ${range.offset}-${range.end}/${metadata.size}`);
+    headers.set("content-length", String(range.length));
+    headers.set("cache-control", headers.get("cache-control") || "public, max-age=31536000, immutable");
+    securityHeaders(headers, false);
+
+    return new Response(object.body, { status: 206, headers });
+  }
+
+  const object = await env.ASSETS.get(key);
+  if (!object || !object.body) return json({ error: "Asset not found" }, 404);
+
   object.writeHttpMetadata(headers);
   headers.set("etag", object.httpEtag);
+  headers.set("content-length", String(object.size));
   headers.set("cache-control", headers.get("cache-control") || "public, max-age=31536000, immutable");
   securityHeaders(headers, false);
 
-  return new Response(headOnly ? null : object.body, { headers });
+  return new Response(object.body, { headers });
 }
 
 async function login(request: Request, env: Env): Promise<Response> {
@@ -710,7 +760,7 @@ function sanitizeFilename(name: string): string {
   return safe || fallback;
 }
 
-function hasAllowedImageSignature(bytes: Uint8Array, type: string): boolean {
+function hasAllowedMediaSignature(bytes: Uint8Array, type: string): boolean {
   if (type === "image/png") {
     return bytes.length > 8 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47;
   }
@@ -726,6 +776,14 @@ function hasAllowedImageSignature(bytes: Uint8Array, type: string): boolean {
     const webp = String.fromCharCode(...bytes.slice(8, 12));
     return riff === "RIFF" && webp === "WEBP";
   }
+  if (type === "video/mp4") {
+    return bytes.length > 12 && String.fromCharCode(...bytes.slice(4, 8)) === "ftyp";
+  }
+  if (type === "video/webm") {
+    const hasEbmlHeader = bytes.length > 4 && bytes[0] === 0x1a && bytes[1] === 0x45 && bytes[2] === 0xdf && bytes[3] === 0xa3;
+    const headerText = String.fromCharCode(...bytes.slice(0, Math.min(bytes.length, 512))).toLowerCase();
+    return hasEbmlHeader && headerText.includes("webm");
+  }
   return false;
 }
 
@@ -740,6 +798,8 @@ function normalizeContent(input: unknown): SiteContent {
   const commission = record(content.commission);
   const footer = record(content.footer);
   const titleLines = textList(hero.titleLines, DEFAULT_CONTENT.hero.titleLines, 6, 42);
+  const heroMediaUrl = cleanImageUrl(hero.mainImageUrl);
+  const aboutMediaUrl = cleanImageUrl(about.imageUrl);
 
   return {
     branding: {
@@ -758,8 +818,9 @@ function normalizeContent(input: unknown): SiteContent {
       subtitle: cleanText(hero.subtitle, DEFAULT_CONTENT.hero.subtitle, 240),
       tags: textList(hero.tags, DEFAULT_CONTENT.hero.tags, 12, 36),
       layout: oneOf(hero.layout, DEFAULT_CONTENT.hero.layout, HERO_LAYOUTS),
-      mainImageUrl: cleanImageUrl(hero.mainImageUrl),
+      mainImageUrl: heroMediaUrl,
       mainImageAlt: cleanOptionalText(hero.mainImageAlt, 120),
+      mainMediaType: heroMediaUrl ? cleanMediaType(hero.mainMediaType, heroMediaUrl) : undefined,
       mainImagePlacement: cleanPlacement(hero.mainImagePlacement),
       mainImageOverlay: cleanOverlayStyle(hero.mainImageOverlay),
     },
@@ -780,8 +841,9 @@ function normalizeContent(input: unknown): SiteContent {
       quoteMuted: cleanText(about.quoteMuted, DEFAULT_CONTENT.about.quoteMuted, 160),
       body: cleanText(about.body, DEFAULT_CONTENT.about.body, 1200),
       signature: cleanText(about.signature, DEFAULT_CONTENT.about.signature, 80),
-      imageUrl: cleanImageUrl(about.imageUrl),
+      imageUrl: aboutMediaUrl,
       imageAlt: cleanOptionalText(about.imageAlt, 120),
+      mediaType: aboutMediaUrl ? cleanMediaType(about.mediaType, aboutMediaUrl) : undefined,
       imagePlacement: cleanPlacement(about.imagePlacement),
       imageOverlay: cleanOverlayStyle(about.imageOverlay),
     },
@@ -807,13 +869,15 @@ function normalizePortfolioItems(value: unknown): PortfolioItem[] {
   return source.slice(0, 36).map((item, index) => {
     const row = record(item);
     const fallback = DEFAULT_CONTENT.portfolio.items[index] || fallbackPortfolioItem(index);
+    const mediaUrl = cleanImageUrl(row.imageUrl);
     return {
       id: cleanSlug(row.id, fallback.id),
       title: cleanText(row.title, fallback.title, 100),
       category: cleanText(row.category, fallback.category, 80),
       description: cleanText(row.description, fallback.description, 400),
-      imageUrl: cleanImageUrl(row.imageUrl),
+      imageUrl: mediaUrl,
       imageAlt: cleanOptionalText(row.imageAlt, 120),
+      mediaType: mediaUrl ? cleanMediaType(row.mediaType, mediaUrl) : undefined,
       imagePlacement: cleanPlacement(row.imagePlacement),
       imageOverlay: cleanOverlayStyle(row.imageOverlay),
       span: oneOf(row.span, fallback.span, PORTFOLIO_SPANS),
@@ -827,14 +891,16 @@ function normalizeFeaturedItems(value: unknown): FeaturedItem[] {
   return source.slice(0, 16).map((item, index) => {
     const row = record(item);
     const fallback = DEFAULT_CONTENT.featured.items[index] || fallbackFeaturedItem(index);
+    const mediaUrl = cleanImageUrl(row.imageUrl);
     return {
       id: cleanSlug(row.id, fallback.id),
       number: cleanText(row.number, fallback.number, 8),
       category: cleanText(row.category, fallback.category, 80),
       title: cleanText(row.title, fallback.title, 120),
       description: cleanText(row.description, fallback.description, 600),
-      imageUrl: cleanImageUrl(row.imageUrl),
+      imageUrl: mediaUrl,
       imageAlt: cleanOptionalText(row.imageAlt, 120),
+      mediaType: mediaUrl ? cleanMediaType(row.mediaType, mediaUrl) : undefined,
       imagePlacement: cleanPlacement(row.imagePlacement),
       imageOverlay: cleanOverlayStyle(row.imageOverlay),
       variant: oneOf(row.variant, fallback.variant, ART_VARIANTS),
@@ -848,14 +914,16 @@ function normalizeProcessSteps(value: unknown): ProcessStep[] {
   return source.slice(0, 12).map((step, index) => {
     const row = record(step);
     const fallback = DEFAULT_CONTENT.process.steps[index] || fallbackProcessStep(index);
+    const mediaUrl = cleanImageUrl(row.imageUrl);
     return {
       id: cleanSlug(row.id, fallback.id),
       number: cleanText(row.number, fallback.number, 8),
       title: cleanText(row.title, fallback.title, 120),
       text: cleanText(row.text, fallback.text, 600),
       progress: cleanPercent(row.progress, fallback.progress),
-      imageUrl: cleanImageUrl(row.imageUrl),
+      imageUrl: mediaUrl,
       imageAlt: cleanOptionalText(row.imageAlt, 120),
+      mediaType: mediaUrl ? cleanMediaType(row.mediaType, mediaUrl) : undefined,
       imagePlacement: cleanPlacement(row.imagePlacement),
       imageOverlay: cleanOverlayStyle(row.imageOverlay),
       variant: oneOf(row.variant, fallback.variant, ART_VARIANTS),
@@ -964,11 +1032,23 @@ function cleanImageUrl(value: unknown): string | undefined {
   if (/^\/api\/assets\/[A-Za-z0-9._~!$&'()*+,;=:@%-]+$/.test(clean) && !clean.includes("..")) return clean;
   try {
     const url = new URL(clean);
-    if (url.protocol === "https:") return url.toString();
+    if (
+      url.protocol === "https:" &&
+      /^\/api\/assets\/[A-Za-z0-9._~!$&'()*+,;=:@%-]+$/.test(url.pathname) &&
+      !url.pathname.includes("..") &&
+      (url.hostname === "tarso-art.pages.dev" || url.hostname === "tarso-art.renanbuiatti14.workers.dev")
+    ) {
+      return url.pathname;
+    }
   } catch {
     return undefined;
   }
   return undefined;
+}
+
+function cleanMediaType(value: unknown, url?: string): MediaType {
+  if (value === "video" || value === "image") return value;
+  return /\.(mp4|webm)(?:$|\?)/i.test(url || "") ? "video" : "image";
 }
 
 function cleanPlacement(value: unknown) {
@@ -1071,6 +1151,31 @@ function cookieSecurityPolicy(request: Request): string {
 function tooLarge(request: Request, limit: number): boolean {
   const length = Number(request.headers.get("Content-Length") || 0);
   return Number.isFinite(length) && length > limit;
+}
+
+function parseRangeHeader(header: string, size: number): { offset: number; length: number; end: number } | null {
+  const match = header.match(/^bytes=(\d*)-(\d*)$/);
+  if (!match || header.includes(",")) return null;
+
+  const [, startText, endText] = match;
+  if (!startText && !endText) return null;
+
+  if (!startText) {
+    const suffix = Number(endText);
+    if (!Number.isFinite(suffix) || suffix <= 0) return null;
+    const length = Math.min(suffix, size);
+    const offset = Math.max(0, size - length);
+    return { offset, length, end: size - 1 };
+  }
+
+  const start = Number(startText);
+  const requestedEnd = endText ? Number(endText) : size - 1;
+  if (!Number.isFinite(start) || !Number.isFinite(requestedEnd) || start < 0 || requestedEnd < start || start >= size) {
+    return null;
+  }
+
+  const end = Math.min(requestedEnd, size - 1);
+  return { offset: start, length: end - start + 1, end };
 }
 
 function clientIp(request: Request): string {

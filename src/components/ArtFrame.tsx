@@ -1,6 +1,6 @@
-import type { CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { resolveAssetUrl } from "../lib/api";
-import type { ArtVariant, ImageOverlayStyle, ImagePlacement } from "../types";
+import type { ArtVariant, ImageOverlayStyle, ImagePlacement, MediaType } from "../types";
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
@@ -58,6 +58,11 @@ export function normalizeImageOverlay(overlay?: ImageOverlayStyle): ImageOverlay
   };
 }
 
+function inferMediaType(src?: string, mediaType?: MediaType): MediaType {
+  if (mediaType === "video" || mediaType === "image") return mediaType;
+  return /\.(mp4|webm)(?:$|\?)/i.test(src || "") ? "video" : "image";
+}
+
 export function ArtFrame({
   variant = "ink",
   category,
@@ -65,6 +70,7 @@ export function ArtFrame({
   description,
   imageUrl,
   imageAlt,
+  mediaType,
   imagePlacement,
   imageOverlay,
   imageLoading = "lazy",
@@ -78,6 +84,7 @@ export function ArtFrame({
   description: string;
   imageUrl?: string;
   imageAlt?: string;
+  mediaType?: MediaType;
   imagePlacement?: ImagePlacement;
   imageOverlay?: ImageOverlayStyle;
   imageLoading?: "eager" | "lazy";
@@ -85,7 +92,10 @@ export function ArtFrame({
   zoom?: boolean;
   round?: boolean;
 }) {
+  const frameRef = useRef<HTMLDivElement | null>(null);
   const src = resolveAssetUrl(imageUrl);
+  const resolvedMediaType = inferMediaType(src, mediaType);
+  const [videoActive, setVideoActive] = useState(imageLoading === "eager");
   const placement = normalizeImagePlacement(imagePlacement);
   const overlay = normalizeImageOverlay(imageOverlay);
   const frameStyle = {
@@ -98,18 +108,65 @@ export function ArtFrame({
     "--overlay-bg-opacity": String(overlay.backgroundOpacity / 100),
     "--overlay-bg-blur": `${overlay.backgroundBlur}px`,
   } as CSSProperties;
+  const hasMedia = Boolean(src);
+  const videoSrc = resolvedMediaType === "video" && (imageLoading === "eager" || videoActive) ? src : undefined;
+
+  useEffect(() => {
+    if (!src || resolvedMediaType !== "video") return;
+    if (imageLoading === "eager") {
+      setVideoActive(true);
+      return;
+    }
+
+    setVideoActive(false);
+    const element = frameRef.current;
+    if (!element || !("IntersectionObserver" in window)) {
+      setVideoActive(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setVideoActive(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "700px 0px", threshold: 0.01 },
+    );
+
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [imageLoading, resolvedMediaType, src]);
 
   return (
-    <div className={`art art--${variant} ${src ? "art--image" : ""} ${round ? "art--round" : ""}`} style={frameStyle}>
+    <div
+      className={`art art--${variant} ${hasMedia ? "art--image" : ""} ${resolvedMediaType === "video" ? "art--video" : ""} ${round ? "art--round" : ""}`}
+      style={frameStyle}
+      ref={frameRef}
+    >
       {src ? (
-        <img
-          className={zoom ? "art__img art__img--zoom" : "art__img"}
-          src={src}
-          alt={imageAlt || description}
-          loading={imageLoading}
-          decoding="async"
-          fetchPriority={fetchPriority}
-        />
+        resolvedMediaType === "video" ? (
+          <video
+            className={zoom ? "art__media art__video art__media--zoom" : "art__media art__video"}
+            src={videoSrc}
+            aria-label={imageAlt || description}
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload={imageLoading === "eager" ? "auto" : "metadata"}
+          />
+        ) : (
+          <img
+            className={zoom ? "art__media art__img art__media--zoom" : "art__media art__img"}
+            src={src}
+            alt={imageAlt || description}
+            loading={imageLoading}
+            decoding="async"
+            fetchPriority={fetchPriority}
+          />
+        )
       ) : (
         <>
           <div className="art__fill" />
