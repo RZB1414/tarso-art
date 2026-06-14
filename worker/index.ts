@@ -1,7 +1,7 @@
 /// <reference types="@cloudflare/workers-types" />
 
 import { DEFAULT_CONTENT } from "../src/content/defaultContent";
-import type { ArtVariant, FeaturedItem, PortfolioItem, ProcessStep, SiteContent } from "../src/types";
+import type { ArtVariant, FeaturedItem, ImageOverlayStyle, PortfolioItem, ProcessStep, SiteContent } from "../src/types";
 
 type Env = {
   DB: D1Database;
@@ -44,6 +44,12 @@ const CHALLENGE_TTL_SECONDS = 10 * 60;
 const TRUSTED_PRODUCTION_ORIGINS = ["https://tarso-art.pages.dev"];
 const IMAGE_ZOOM_MIN = 0.25;
 const IMAGE_ZOOM_MAX = 3;
+const DEFAULT_IMAGE_OVERLAY: ImageOverlayStyle = {
+  textColor: "#ffffff",
+  backgroundColor: "#111318",
+  backgroundOpacity: 0,
+  backgroundBlur: 0,
+};
 const PORTFOLIO_SPANS: Array<PortfolioItem["span"]> = ["s-a", "s-b", "s-c", "s-d", "s-e", "s-f", "s-g"];
 const ART_VARIANTS: ArtVariant[] = ["ink", "graphite"];
 const HERO_LAYOUTS: Array<SiteContent["hero"]["layout"]> = ["panels", "splash", "editorial"];
@@ -749,6 +755,7 @@ function normalizeContent(input: unknown): SiteContent {
       mainImageUrl: cleanImageUrl(hero.mainImageUrl),
       mainImageAlt: cleanOptionalText(hero.mainImageAlt, 120),
       mainImagePlacement: cleanPlacement(hero.mainImagePlacement),
+      mainImageOverlay: cleanOverlayStyle(hero.mainImageOverlay),
     },
     portfolio: {
       eyebrow: cleanText(portfolio.eyebrow, DEFAULT_CONTENT.portfolio.eyebrow, 80),
@@ -770,6 +777,7 @@ function normalizeContent(input: unknown): SiteContent {
       imageUrl: cleanImageUrl(about.imageUrl),
       imageAlt: cleanOptionalText(about.imageAlt, 120),
       imagePlacement: cleanPlacement(about.imagePlacement),
+      imageOverlay: cleanOverlayStyle(about.imageOverlay),
     },
     process: {
       eyebrow: cleanText(process.eyebrow, DEFAULT_CONTENT.process.eyebrow, 80),
@@ -801,6 +809,7 @@ function normalizePortfolioItems(value: unknown): PortfolioItem[] {
       imageUrl: cleanImageUrl(row.imageUrl),
       imageAlt: cleanOptionalText(row.imageAlt, 120),
       imagePlacement: cleanPlacement(row.imagePlacement),
+      imageOverlay: cleanOverlayStyle(row.imageOverlay),
       span: oneOf(row.span, fallback.span, PORTFOLIO_SPANS),
       variant: oneOf(row.variant, fallback.variant, ART_VARIANTS),
     };
@@ -821,6 +830,7 @@ function normalizeFeaturedItems(value: unknown): FeaturedItem[] {
       imageUrl: cleanImageUrl(row.imageUrl),
       imageAlt: cleanOptionalText(row.imageAlt, 120),
       imagePlacement: cleanPlacement(row.imagePlacement),
+      imageOverlay: cleanOverlayStyle(row.imageOverlay),
       variant: oneOf(row.variant, fallback.variant, ART_VARIANTS),
       meta: normalizeMeta(row.meta, fallback.meta),
     };
@@ -841,6 +851,7 @@ function normalizeProcessSteps(value: unknown): ProcessStep[] {
       imageUrl: cleanImageUrl(row.imageUrl),
       imageAlt: cleanOptionalText(row.imageAlt, 120),
       imagePlacement: cleanPlacement(row.imagePlacement),
+      imageOverlay: cleanOverlayStyle(row.imageOverlay),
       variant: oneOf(row.variant, fallback.variant, ART_VARIANTS),
     };
   });
@@ -962,6 +973,26 @@ function cleanPlacement(value: unknown) {
     y: cleanNumber(row.y, 50, 0, 100),
     zoom: cleanNumber(row.zoom, 1, IMAGE_ZOOM_MIN, IMAGE_ZOOM_MAX),
   };
+}
+
+function cleanOverlayStyle(value: unknown): ImageOverlayStyle | undefined {
+  const row = record(value);
+  if (!Object.keys(row).length) return undefined;
+  return {
+    textColor: cleanHexColor(row.textColor, DEFAULT_IMAGE_OVERLAY.textColor),
+    backgroundColor: cleanHexColor(row.backgroundColor, DEFAULT_IMAGE_OVERLAY.backgroundColor),
+    backgroundOpacity: cleanNumber(
+      row.backgroundOpacity,
+      DEFAULT_IMAGE_OVERLAY.backgroundOpacity,
+      0,
+      100,
+    ),
+    backgroundBlur: cleanNumber(row.backgroundBlur, DEFAULT_IMAGE_OVERLAY.backgroundBlur, 0, 30),
+  };
+}
+
+function cleanHexColor(value: unknown, fallback: string): string {
+  return typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value) ? value : fallback;
 }
 
 function cleanNumber(value: unknown, fallback: number, min: number, max: number): number {

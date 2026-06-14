@@ -510,6 +510,7 @@ export function AdminPanel({ initialContent, loading, onContentSaved }: AdminPan
               value={draft.hero.mainImageUrl}
               alt={draft.hero.mainImageAlt}
               placement={draft.hero.mainImagePlacement}
+              overlay={draft.hero.mainImageOverlay}
               preview={{
                 className: "admin-image-preview--hero",
                 category: "Hero",
@@ -521,6 +522,7 @@ export function AdminPanel({ initialContent, loading, onContentSaved }: AdminPan
                 update(["hero", "mainImageAlt"], alt);
               }}
               onPlacementChange={(placement) => update(["hero", "mainImagePlacement"], placement)}
+              onOverlayChange={(overlay) => update(["hero", "mainImageOverlay"], overlay)}
             />
           </AdminSection>
         ) : null}
@@ -559,6 +561,7 @@ export function AdminPanel({ initialContent, loading, onContentSaved }: AdminPan
                   value={item.imageUrl}
                   alt={item.imageAlt}
                   placement={item.imagePlacement}
+                  overlay={item.imageOverlay}
                   preview={{
                     className: `admin-image-preview--portfolio admin-image-preview--${item.span}`,
                     category: item.category,
@@ -571,6 +574,7 @@ export function AdminPanel({ initialContent, loading, onContentSaved }: AdminPan
                     update(["portfolio", "items", index, "imageAlt"], alt);
                   }}
                   onPlacementChange={(placement) => update(["portfolio", "items", index, "imagePlacement"], placement)}
+                  onOverlayChange={(overlay) => update(["portfolio", "items", index, "imageOverlay"], overlay)}
                 />
               </CardEditor>
             ))}
@@ -631,6 +635,7 @@ export function AdminPanel({ initialContent, loading, onContentSaved }: AdminPan
                   value={item.imageUrl}
                   alt={item.imageAlt}
                   placement={item.imagePlacement}
+                  overlay={item.imageOverlay}
                   preview={{
                     className: "admin-image-preview--featured",
                     category: item.category,
@@ -643,6 +648,7 @@ export function AdminPanel({ initialContent, loading, onContentSaved }: AdminPan
                     update(["featured", "items", index, "imageAlt"], alt);
                   }}
                   onPlacementChange={(placement) => update(["featured", "items", index, "imagePlacement"], placement)}
+                  onOverlayChange={(overlay) => update(["featured", "items", index, "imageOverlay"], overlay)}
                 />
               </CardEditor>
             ))}
@@ -664,6 +670,7 @@ export function AdminPanel({ initialContent, loading, onContentSaved }: AdminPan
               value={draft.about.imageUrl}
               alt={draft.about.imageAlt}
               placement={draft.about.imagePlacement}
+              overlay={draft.about.imageOverlay}
               preview={{
                 className: "admin-image-preview--portrait",
                 variant: "graphite",
@@ -676,6 +683,7 @@ export function AdminPanel({ initialContent, loading, onContentSaved }: AdminPan
                 update(["about", "imageAlt"], alt);
               }}
               onPlacementChange={(placement) => update(["about", "imagePlacement"], placement)}
+              onOverlayChange={(overlay) => update(["about", "imageOverlay"], overlay)}
             />
           </AdminSection>
         ) : null}
@@ -714,6 +722,7 @@ export function AdminPanel({ initialContent, loading, onContentSaved }: AdminPan
                   value={step.imageUrl}
                   alt={step.imageAlt}
                   placement={step.imagePlacement}
+                  overlay={step.imageOverlay}
                   preview={{
                     className: "admin-image-preview--process",
                     variant: step.variant,
@@ -724,6 +733,7 @@ export function AdminPanel({ initialContent, loading, onContentSaved }: AdminPan
                     update(["process", "steps", index, "imageAlt"], alt);
                   }}
                   onPlacementChange={(placement) => update(["process", "steps", index, "imagePlacement"], placement)}
+                  onOverlayChange={(overlay) => update(["process", "steps", index, "imageOverlay"], overlay)}
                 />
               </CardEditor>
             ))}

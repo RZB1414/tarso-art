@@ -6,6 +6,13 @@ export type ImagePlacement = {
   zoom: number;
 };
 
+export type ImageOverlayStyle = {
+  textColor: string;
+  backgroundColor: string;
+  backgroundOpacity: number;
+  backgroundBlur: number;
+};
+
 export type PortfolioItem = {
   id: string;
   title: string;
@@ -14,6 +21,7 @@ export type PortfolioItem = {
   imageUrl?: string;
   imageAlt?: string;
   imagePlacement?: ImagePlacement;
+  imageOverlay?: ImageOverlayStyle;
   span: "s-a" | "s-b" | "s-c" | "s-d" | "s-e" | "s-f" | "s-g";
   variant: ArtVariant;
 };
@@ -27,6 +35,7 @@ export type FeaturedItem = {
   imageUrl?: string;
   imageAlt?: string;
   imagePlacement?: ImagePlacement;
+  imageOverlay?: ImageOverlayStyle;
   variant: ArtVariant;
   meta: Array<{ label: string; value: string }>;
 };
@@ -40,6 +49,7 @@ export type ProcessStep = {
   imageUrl?: string;
   imageAlt?: string;
   imagePlacement?: ImagePlacement;
+  imageOverlay?: ImageOverlayStyle;
   variant: ArtVariant;
 };
 
@@ -63,6 +73,7 @@ export type SiteContent = {
     mainImageUrl?: string;
     mainImageAlt?: string;
     mainImagePlacement?: ImagePlacement;
+    mainImageOverlay?: ImageOverlayStyle;
   };
   portfolio: {
     eyebrow: string;
@@ -84,6 +95,7 @@ export type SiteContent = {
     imageUrl?: string;
     imageAlt?: string;
     imagePlacement?: ImagePlacement;
+    imageOverlay?: ImageOverlayStyle;
   };
   process: {
     eyebrow: string;

@@ -204,6 +204,7 @@ function Hero({ content }: { content: SiteContent }) {
                 imageUrl={content.hero.mainImageUrl}
                 imageAlt={content.hero.mainImageAlt}
                 imagePlacement={content.hero.mainImagePlacement}
+                imageOverlay={content.hero.mainImageOverlay}
               />
             </div>
           ) : (
@@ -382,6 +383,7 @@ function PortfolioCard({
           imageUrl={item.imageUrl}
           imageAlt={item.imageAlt}
           imagePlacement={item.imagePlacement}
+          imageOverlay={item.imageOverlay}
           zoom
         />
         <div className="cover">
@@ -446,6 +448,7 @@ function Lightbox({
             imageUrl={active.imageUrl}
             imageAlt={active.imageAlt}
             imagePlacement={active.imagePlacement}
+            imageOverlay={active.imageOverlay}
           />
           <div className="lightbox__meta">
             <div>
@@ -491,6 +494,7 @@ function FeaturedCard({ item }: { item: FeaturedItem }) {
           imageUrl={item.imageUrl}
           imageAlt={item.imageAlt}
           imagePlacement={item.imagePlacement}
+          imageOverlay={item.imageOverlay}
           zoom
         />
       </div>
@@ -528,6 +532,7 @@ function Statement({ content }: { content: SiteContent }) {
               imageUrl={content.about.imageUrl}
               imageAlt={content.about.imageAlt}
               imagePlacement={content.about.imagePlacement}
+              imageOverlay={content.about.imageOverlay}
               round
             />
           </div>
@@ -574,6 +579,7 @@ function ProcessCard({ step, index }: { step: ProcessStep; index: number }) {
           imageUrl={step.imageUrl}
           imageAlt={step.imageAlt}
           imagePlacement={step.imagePlacement}
+          imageOverlay={step.imageOverlay}
         />
       </div>
       <div className="pcard__body">

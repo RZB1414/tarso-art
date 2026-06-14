@@ -1,7 +1,13 @@
 import { useRef, useState, type PointerEvent, type ReactNode } from "react";
 import { resolveAssetUrl, uploadImage } from "../lib/api";
-import type { ImagePlacement } from "../types";
-import { ArtFrame, IMAGE_ZOOM_MAX, IMAGE_ZOOM_MIN, normalizeImagePlacement } from "./ArtFrame";
+import type { ImageOverlayStyle, ImagePlacement } from "../types";
+import {
+  ArtFrame,
+  IMAGE_ZOOM_MAX,
+  IMAGE_ZOOM_MIN,
+  normalizeImageOverlay,
+  normalizeImagePlacement,
+} from "./ArtFrame";
 
 export function TextField({
   label,
@@ -80,15 +86,18 @@ export function ImageField({
   value,
   alt,
   placement,
+  overlay,
   preview,
   help,
   onImageChange,
   onPlacementChange,
+  onOverlayChange,
 }: {
   label: string;
   value?: string;
   alt?: string;
   placement?: ImagePlacement;
+  overlay?: ImageOverlayStyle;
   preview: {
     className: string;
     variant?: "ink" | "graphite";
@@ -101,6 +110,7 @@ export function ImageField({
   help?: string;
   onImageChange: (url?: string, alt?: string) => void;
   onPlacementChange: (placement?: ImagePlacement) => void;
+  onOverlayChange?: (overlay?: ImageOverlayStyle) => void;
 }) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
@@ -114,6 +124,7 @@ export function ImageField({
   } | null>(null);
   const resolved = resolveAssetUrl(value);
   const frame = normalizeImagePlacement(placement);
+  const overlayStyle = normalizeImageOverlay(overlay);
   const fileName = value ? decodeURIComponent(value.split("/").pop() || "imagem") : "";
 
   async function handleFile(file?: File) {
@@ -137,6 +148,14 @@ export function ImageField({
 
   function changePlacement(next: Partial<ImagePlacement>) {
     onPlacementChange(normalizeImagePlacement({ ...frame, ...next }));
+  }
+
+  function changeOverlay(next: Partial<ImageOverlayStyle>) {
+    onOverlayChange?.(normalizeImageOverlay({ ...overlayStyle, ...next }));
+  }
+
+  function resetOverlay() {
+    onOverlayChange?.(undefined);
   }
 
   function startDrag(event: PointerEvent<HTMLDivElement>) {
@@ -212,6 +231,7 @@ export function ImageField({
             imageUrl={value}
             imageAlt={alt || label}
             imagePlacement={frame}
+            imageOverlay={overlayStyle}
             zoom={preview.zoom}
             round={preview.round}
           />
@@ -261,6 +281,58 @@ export function ImageField({
       ) : null}
 
       {value ? (
+        <div className="admin-overlay-controls">
+          <div className="admin-overlay-controls__head">
+            <strong>Texto sobre a imagem</strong>
+            <span>Cor, fundo e blur para melhorar a leitura.</span>
+          </div>
+          <div className="admin-color-grid">
+            <label className="admin-color-field">
+              <span>Cor do texto</span>
+              <input
+                type="color"
+                value={overlayStyle.textColor}
+                onChange={(event) => changeOverlay({ textColor: event.target.value })}
+              />
+            </label>
+            <label className="admin-color-field">
+              <span>Cor do fundo</span>
+              <input
+                type="color"
+                value={overlayStyle.backgroundColor}
+                onChange={(event) => changeOverlay({ backgroundColor: event.target.value })}
+              />
+            </label>
+          </div>
+          <label className="admin-range">
+            <span>Opacidade <b>{Math.round(overlayStyle.backgroundOpacity)}%</b></span>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              step="1"
+              value={overlayStyle.backgroundOpacity}
+              onChange={(event) => changeOverlay({ backgroundOpacity: Number(event.target.value) })}
+            />
+          </label>
+          <label className="admin-range">
+            <span>Blur <b>{Math.round(overlayStyle.backgroundBlur)}px</b></span>
+            <input
+              type="range"
+              min="0"
+              max="30"
+              step="1"
+              value={overlayStyle.backgroundBlur}
+              onChange={(event) => changeOverlay({ backgroundBlur: Number(event.target.value) })}
+            />
+          </label>
+          <button className="admin-btn admin-btn--ghost admin-btn--fit" type="button" onClick={resetOverlay}>
+            Restaurar texto
+          </button>
+        </div>
+      ) : null}
+
+      {value ? (
         <div className="admin-image-actions">
           <button className="admin-btn admin-btn--ghost admin-btn--fit" type="button" onClick={() => onPlacementChange({ x: 50, y: 50, zoom: 1 })}>
             Centralizar imagem
@@ -271,6 +343,7 @@ export function ImageField({
             onClick={() => {
               onImageChange(undefined, undefined);
               onPlacementChange(undefined);
+              onOverlayChange?.(undefined);
             }}
           >
             Remover imagem

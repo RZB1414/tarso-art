@@ -376,7 +376,10 @@ button {
 
 .art--image .art__label,
 .art--image .art__drop {
-  color: #fff;
+  color: var(--overlay-text-color, #fff);
+  background: rgb(var(--overlay-bg-rgb, 17 19 24) / var(--overlay-bg-opacity, 0));
+  backdrop-filter: blur(var(--overlay-bg-blur, 0px));
+  -webkit-backdrop-filter: blur(var(--overlay-bg-blur, 0px));
   text-shadow: 0 1px 16px rgba(0, 0, 0, 0.5);
 }
 
@@ -1893,6 +1896,62 @@ button {
   display: grid;
   gap: 10px;
   max-width: 520px;
+}
+
+.admin-overlay-controls {
+  display: grid;
+  gap: 12px;
+  max-width: 520px;
+  border: 1.5px solid var(--line-strong);
+  background: rgba(255, 255, 255, 0.42);
+  padding: 14px;
+}
+
+.admin-overlay-controls__head {
+  display: grid;
+  gap: 4px;
+}
+
+.admin-overlay-controls__head strong {
+  font-family: "Space Mono", monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.72rem;
+  color: var(--paper);
+}
+
+.admin-overlay-controls__head span {
+  color: var(--ash);
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+
+.admin-color-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.admin-color-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid var(--line);
+  padding: 10px 12px;
+  color: var(--ash);
+  font-family: "Space Mono", monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.66rem;
+}
+
+.admin-color-field input {
+  width: 44px;
+  height: 32px;
+  border: 1px solid var(--line-strong);
+  padding: 0;
+  background: transparent;
 }
 
 .admin-range {
