@@ -11,7 +11,11 @@ Fluxo padrão ao terminar uma mudança:
 1. Garantir que o build passa: `npm run build`.
 2. Commitar tudo (mensagem clara, em português).
 3. Deploy do **worker**: `npm run worker:deploy`.
-4. Deploy do **frontend**: `git push origin main` (o Cloudflare Pages está conectado ao repo `RZB1414/tarso-art` e faz build/deploy automático no push para `main`). Se o auto-deploy não estiver ativo, usar `npx wrangler pages deploy dist --project-name tarso-art`.
+4. Deploy do **frontend** (Pages, projeto `tarso-art`): `npm run build` e depois `npx wrangler pages deploy dist --project-name tarso-art --branch main --commit-dirty=true`.
+   - Sempre dar `git push origin main` também (mantém o GitHub em dia). O Pages está ligado ao repo, mas o **auto-deploy via push tem ficado atrasado/não confiável** — por isso o upload direto do `dist` é o método garantido.
+   - Depois, confirmar em produção: `https://tarso-art.pages.dev/` (200) e `https://tarso-art.pages.dev/api/site` (200).
+
+> Rede com a API da Cloudflare às vezes falha com "fetch failed" (blip transitório). Se acontecer, **repetir o comando** — costuma funcionar na 2ª tentativa.
 
 > Mudanças que envolvem `worker/index.ts` **e** o frontend exigem os **dois** deploys: o worker valida/persiste os dados (ex.: normalização de conteúdo) e o frontend mostra a UI. Publicar só um lado quebra o recurso.
 
