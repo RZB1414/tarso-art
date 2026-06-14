@@ -84,7 +84,7 @@ export function ArtFrame({
   const src = resolveAssetUrl(imageUrl);
   const placement = normalizeImagePlacement(imagePlacement);
   const overlay = normalizeImageOverlay(imageOverlay);
-  const imageStyle = {
+  const frameStyle = {
     "--img-x": `${placement.x}%`,
     "--img-y": `${placement.y}%`,
     "--img-scale": String(placement.zoom),
@@ -96,13 +96,12 @@ export function ArtFrame({
   } as CSSProperties;
 
   return (
-    <div className={`art art--${variant} ${src ? "art--image" : ""} ${round ? "art--round" : ""}`}>
+    <div className={`art art--${variant} ${src ? "art--image" : ""} ${round ? "art--round" : ""}`} style={frameStyle}>
       {src ? (
         <img
           className={zoom ? "art__img art__img--zoom" : "art__img"}
           src={src}
           alt={imageAlt || description}
-          style={imageStyle}
         />
       ) : (
         <>
