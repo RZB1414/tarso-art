@@ -205,6 +205,8 @@ function Hero({ content }: { content: SiteContent }) {
                 imageAlt={content.hero.mainImageAlt}
                 imagePlacement={content.hero.mainImagePlacement}
                 imageOverlay={content.hero.mainImageOverlay}
+                imageLoading="eager"
+                fetchPriority="high"
               />
             </div>
           ) : (
@@ -449,6 +451,8 @@ function Lightbox({
             imageAlt={active.imageAlt}
             imagePlacement={active.imagePlacement}
             imageOverlay={active.imageOverlay}
+            imageLoading="eager"
+            fetchPriority="high"
           />
           <div className="lightbox__meta">
             <div>

@@ -1,6 +1,7 @@
 /// <reference types="@cloudflare/workers-types" />
 
 import { DEFAULT_CONTENT } from "../src/content/defaultContent";
+import { ALLOWED_IMAGE_TYPES, MAX_IMAGE_FILE_SIZE, MAX_IMAGE_UPLOAD_REQUEST_SIZE, formatFileSize } from "../src/media";
 import type { ArtVariant, FeaturedItem, ImageOverlayStyle, PortfolioItem, ProcessStep, SiteContent } from "../src/types";
 
 type Env = {
@@ -36,7 +37,6 @@ type RateLimitResult = {
 const SITE_ID = "main";
 const SESSION_COOKIE = "tarso_admin";
 const CHALLENGE_COOKIE = "tarso_admin_challenge";
-const MAX_IMAGE_SIZE = 8 * 1024 * 1024;
 const MAX_JSON_SIZE = 256 * 1024;
 const SESSION_TTL_SECONDS = 7 * 24 * 60 * 60;
 const TOTP_TTL_SECONDS = 24 * 60 * 60;
@@ -67,8 +67,8 @@ export default {
         return withCors(request, env, json({ data: await readSiteContent(env) }));
       }
 
-      if (url.pathname.startsWith("/api/assets/") && request.method === "GET") {
-        return withCors(request, env, await serveAsset(url, env));
+      if (url.pathname.startsWith("/api/assets/") && ["GET", "HEAD"].includes(request.method)) {
+        return withCors(request, env, await serveAsset(url, env, request.method === "HEAD"));
       }
 
       if (url.pathname === "/api/admin/login" && request.method === "POST") {
@@ -171,12 +171,18 @@ async function saveSite(request: Request, env: Env): Promise<Response> {
 }
 
 async function uploadImage(request: Request, env: Env): Promise<Response> {
+  if (tooLarge(request, MAX_IMAGE_UPLOAD_REQUEST_SIZE)) {
+    return json({ error: `Imagem muito grande. Use arquivo de ate ${formatFileSize(MAX_IMAGE_FILE_SIZE)}.` }, 413);
+  }
+
   const form = await request.formData();
   const file = form.get("file");
 
   if (!(file instanceof File)) return json({ error: "Missing file" }, 400);
-  if (file.size > MAX_IMAGE_SIZE) return json({ error: "Image must be 8MB or smaller" }, 400);
-  if (!["image/png", "image/jpeg", "image/webp", "image/gif"].includes(file.type)) {
+  if (file.size > MAX_IMAGE_FILE_SIZE) {
+    return json({ error: `Imagem muito grande. Use arquivo de ate ${formatFileSize(MAX_IMAGE_FILE_SIZE)}.` }, 400);
+  }
+  if (!ALLOWED_IMAGE_TYPES.includes(file.type as (typeof ALLOWED_IMAGE_TYPES)[number])) {
     return json({ error: "Only PNG, JPEG, WebP and GIF images are allowed" }, 400);
   }
 
@@ -213,7 +219,7 @@ async function uploadImage(request: Request, env: Env): Promise<Response> {
   return json({ data: { key, url } });
 }
 
-async function serveAsset(url: URL, env: Env): Promise<Response> {
+async function serveAsset(url: URL, env: Env, headOnly = false): Promise<Response> {
   const key = decodeURIComponent(url.pathname.replace("/api/assets/", ""));
   if (!key || key.includes("..") || key.includes("/") || key.includes("\\")) {
     return json({ error: "Missing asset key" }, 400);
@@ -228,7 +234,7 @@ async function serveAsset(url: URL, env: Env): Promise<Response> {
   headers.set("cache-control", headers.get("cache-control") || "public, max-age=31536000, immutable");
   securityHeaders(headers, false);
 
-  return new Response(object.body, { headers });
+  return new Response(headOnly ? null : object.body, { headers });
 }
 
 async function login(request: Request, env: Env): Promise<Response> {

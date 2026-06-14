@@ -789,7 +789,7 @@ button {
 
 .scroll-hint {
   position: absolute;
-  bottom: 24px;
+  bottom: 8px;
   left: var(--gut);
   z-index: 3;
   display: flex;

@@ -1,5 +1,6 @@
 import { useRef, useState, type PointerEvent, type ReactNode } from "react";
 import { resolveAssetUrl, uploadImage } from "../lib/api";
+import { ALLOWED_IMAGE_TYPES, MAX_IMAGE_FILE_SIZE, formatFileSize } from "../media";
 import type { ImageOverlayStyle, ImagePlacement } from "../types";
 import {
   ArtFrame,
@@ -130,6 +131,14 @@ export function ImageField({
   async function handleFile(file?: File) {
     if (!file) return;
     setError("");
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type as (typeof ALLOWED_IMAGE_TYPES)[number])) {
+      setError("Use apenas imagens PNG, JPG, WebP ou GIF.");
+      return;
+    }
+    if (file.size > MAX_IMAGE_FILE_SIZE) {
+      setError(`Imagem muito grande. Use arquivo de ate ${formatFileSize(MAX_IMAGE_FILE_SIZE)}.`);
+      return;
+    }
     setUploading(true);
     try {
       const result = await uploadImage(file);
@@ -195,7 +204,10 @@ export function ImageField({
       <div className="admin-image-field__head">
         <div>
           <span>{label}</span>
-          <small>{help || "Envie uma imagem e ajuste o enquadramento vendo exatamente como ela aparece no site."}</small>
+          <small>
+            {help || "Envie uma imagem e ajuste o enquadramento vendo exatamente como ela aparece no site."}
+            {" "}Limite: {formatFileSize(MAX_IMAGE_FILE_SIZE)} por imagem.
+          </small>
         </div>
         <label className="admin-upload">
           {uploading ? "Enviando..." : value ? "Trocar imagem" : "Escolher imagem"}
@@ -232,6 +244,8 @@ export function ImageField({
             imageAlt={alt || label}
             imagePlacement={frame}
             imageOverlay={overlayStyle}
+            imageLoading="eager"
+            fetchPriority="high"
             zoom={preview.zoom}
             round={preview.round}
           />

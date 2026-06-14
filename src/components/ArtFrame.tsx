@@ -67,6 +67,8 @@ export function ArtFrame({
   imageAlt,
   imagePlacement,
   imageOverlay,
+  imageLoading = "lazy",
+  fetchPriority = imageLoading === "eager" ? "high" : "low",
   zoom = false,
   round = false,
 }: {
@@ -78,6 +80,8 @@ export function ArtFrame({
   imageAlt?: string;
   imagePlacement?: ImagePlacement;
   imageOverlay?: ImageOverlayStyle;
+  imageLoading?: "eager" | "lazy";
+  fetchPriority?: "high" | "low" | "auto";
   zoom?: boolean;
   round?: boolean;
 }) {
@@ -102,6 +106,9 @@ export function ArtFrame({
           className={zoom ? "art__img art__img--zoom" : "art__img"}
           src={src}
           alt={imageAlt || description}
+          loading={imageLoading}
+          decoding="async"
+          fetchPriority={fetchPriority}
         />
       ) : (
         <>
