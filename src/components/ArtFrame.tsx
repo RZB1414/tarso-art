@@ -45,7 +45,6 @@ export function ArtFrame({
   const src = resolveAssetUrl(imageUrl);
   const placement = normalizeImagePlacement(imagePlacement);
   const imageStyle = {
-    "--img-fit": placement.zoom < 1 ? "contain" : "cover",
     "--img-x": `${placement.x}%`,
     "--img-y": `${placement.y}%`,
     "--img-scale": String(placement.zoom),
